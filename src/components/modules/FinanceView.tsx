@@ -181,8 +181,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onXpChange }) => {
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
