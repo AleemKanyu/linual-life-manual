@@ -164,22 +164,24 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onXpChange }) => {
             </div>
           ) : (
             txs.map((t) => (
-            <div key={t.id} className="p-3.5 rounded-2xl bg-[#F1EFEC] border border-[#EBE9E1] flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-[#2D2D2A]">{t.title}</div>
-                <div className="text-[10px] text-[#6B6A65]">{t.category} • {t.date}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`text-xs font-bold ${t.type === "income" ? "text-[#5A6A5A]" : "text-[#B07D62]"}`}>
-                  {t.type === "income" ? "+" : "-"}${t.amount.toFixed(2)}
+              <div key={t.id} className="p-3.5 rounded-2xl bg-[#F1EFEC] border border-[#EBE9E1] flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-[#2D2D2A]">{t.title}</div>
+                  <div className="text-[10px] text-[#6B6A65]">{t.category} • {t.date}</div>
                 </div>
-                <button
-                  onClick={() => handleDeleteTx(t.id)}
-                  className="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
-                  title="Delete Transaction"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <div className={`text-xs font-bold ${t.type === "income" ? "text-[#5A6A5A]" : "text-[#B07D62]"}`}>
+                    {t.type === "income" ? "+" : "-"}${t.amount.toFixed(2)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTx(t.id)}
+                    className="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                    title="Delete Transaction"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))
           )}
