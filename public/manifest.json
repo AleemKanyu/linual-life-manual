@@ -1,0 +1,16 @@
+{
+  "short_name": "Linual",
+  "name": "Linual — Personal Life Manual",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#FAF9F6",
+  "theme_color": "#5A6A5A",
+  "display": "standalone",
+  "orientation": "portrait"
+}
