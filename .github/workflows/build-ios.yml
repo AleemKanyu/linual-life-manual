@@ -27,13 +27,103 @@ jobs:
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
-      - name: Build iOS Xcode App
+      - name: Resolve Swift Package Dependencies
         run: |
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Release CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -resolvePackageDependencies \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -clonedSourcePackagesDirPath SourcePackages
 
-      - name: Upload iOS App Artifact
+      - name: Build for iOS Simulator (no signing required)
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DSTROOT=${{ github.workspace }}/build/dst \
+            | xcpretty
+
+      - name: Upload Simulator Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Linual-iOS-iPadOS-Simulator-App
-          path: ios/App/build/Release-iphonesimulator/App.app
+          name: Linual-LifeOS-Simulator
+          path: build/dst/**/*.app
+          if-no-files-found: warn
+
+  # -----------------------------------------------------------------------
+  # REAL IPA BUILD — Uncomment this job once you have an Apple Developer
+  # account ($99/yr at developer.apple.com) and add these GitHub Secrets:
+  #
+  #   IOS_CERTIFICATE_BASE64      — base64 of your .p12 distribution cert
+  #   IOS_CERTIFICATE_PASSWORD    — password for the .p12
+  #   IOS_PROVISION_PROFILE_BASE64 — base64 of your .mobileprovision file
+  #   KEYCHAIN_PASSWORD           — any random strong string
+  #   APPLE_TEAM_ID               — 10-char Team ID from developer.apple.com
+  # -----------------------------------------------------------------------
+  # build-ios-signed:
+  #   runs-on: macos-latest
+  #   needs: build-ios
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #     - run: npm ci
+  #     - run: npm run build
+  #     - run: npx cap sync ios
+  #     - name: Install Certificate & Profile
+  #       env:
+  #         CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+  #         CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+  #         PROVISION_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+  #         KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+  #       run: |
+  #         echo "$CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+  #         echo "$PROVISION_BASE64"   | base64 --decode > profile.mobileprovision
+  #         security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+  #         security default-keychain -s build.keychain
+  #         security unlock-keychain  -p "$KEYCHAIN_PASSWORD" build.keychain
+  #         security set-keychain-settings -t 3600 -u build.keychain
+  #         security import certificate.p12 -k build.keychain \
+  #           -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+  #         security set-key-partition-list -S apple-tool:,apple: \
+  #           -s -k "$KEYCHAIN_PASSWORD" build.keychain
+  #         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+  #         cp profile.mobileprovision \
+  #           ~/Library/MobileDevice/Provisioning\ Profiles/
+  #     - name: Archive
+  #       run: |
+  #         xcodebuild archive \
+  #           -project ios/App/App.xcodeproj \
+  #           -scheme App \
+  #           -configuration Release \
+  #           -archivePath ${{ github.workspace }}/build/App.xcarchive \
+  #           -destination "generic/platform=iOS" \
+  #           CODE_SIGN_STYLE=Manual \
+  #           DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+  #           | xcpretty
+  #     - name: Export IPA
+  #       run: |
+  #         cat > ExportOptions.plist << 'EOF'
+  #         <?xml version="1.0" encoding="UTF-8"?>
+  #         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  #         <plist version="1.0"><dict>
+  #           <key>method</key><string>ad-hoc</string>
+  #           <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+  #           <key>compileBitcode</key><false/>
+  #         </dict></plist>
+  #         EOF
+  #         xcodebuild -exportArchive \
+  #           -archivePath ${{ github.workspace }}/build/App.xcarchive \
+  #           -exportPath  ${{ github.workspace }}/build/output \
+  #           -exportOptionsPlist ExportOptions.plist | xcpretty
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Linual-LifeOS-iOS
+  #         path: build/output/*.ipa
+  #         if-no-files-found: error
